@@ -18,8 +18,8 @@ import (
 )
 
 // Validate the given Zarf package. The Zarf package should not already be composed when sent to this function.
-func Validate(ctx context.Context, pkg types.ZarfPackage, createOpts types.ZarfCreateOptions) ([]types.PackageFinding, error) {
-	var findings []types.PackageFinding
+func Validate(ctx context.Context, pkg types.ZarfPackage, createOpts types.ZarfCreateOptions) ([]rules.PackageFinding, error) {
+	var findings []rules.PackageFinding
 	compFindings, err := lintComponents(ctx, pkg, createOpts)
 	if err != nil {
 		return nil, err
@@ -35,8 +35,8 @@ func Validate(ctx context.Context, pkg types.ZarfPackage, createOpts types.ZarfC
 	return findings, nil
 }
 
-func lintComponents(ctx context.Context, pkg types.ZarfPackage, createOpts types.ZarfCreateOptions) ([]types.PackageFinding, error) {
-	var findings []types.PackageFinding
+func lintComponents(ctx context.Context, pkg types.ZarfPackage, createOpts types.ZarfCreateOptions) ([]rules.PackageFinding, error) {
+	var findings []rules.PackageFinding
 
 	for i, component := range pkg.Components {
 		arch := config.GetArch(pkg.Metadata.Architecture)
@@ -69,31 +69,31 @@ func lintComponents(ctx context.Context, pkg types.ZarfPackage, createOpts types
 	return findings, nil
 }
 
-func fillComponentTemplate(c *types.ZarfComponent, createOpts *types.ZarfCreateOptions) ([]types.PackageFinding, error) {
-	var findings []types.PackageFinding
+func fillComponentTemplate(c *types.ZarfComponent, createOpts *types.ZarfCreateOptions) ([]rules.PackageFinding, error) {
+	var findings []rules.PackageFinding
 	var templateMap map[string]string
 
 	setVarsAndWarn := func(templatePrefix string, deprecated bool) {
 		yamlTemplates, err := utils.FindYamlTemplates(c, templatePrefix, "###")
 		if err != nil {
-			findings = append(findings, types.PackageFinding{
+			findings = append(findings, rules.PackageFinding{
 				Description: err.Error(),
-				Severity:    types.SevWarn,
+				Severity:    rules.SevWarn,
 			})
 		}
 
 		for key := range yamlTemplates {
 			if deprecated {
-				findings = append(findings, types.PackageFinding{
+				findings = append(findings, rules.PackageFinding{
 					Description: fmt.Sprintf(lang.PkgValidateTemplateDeprecation, key, key, key),
-					Severity:    types.SevWarn,
+					Severity:    rules.SevWarn,
 				})
 			}
 			_, present := createOpts.SetVariables[key]
 			if !present {
-				findings = append(findings, types.PackageFinding{
+				findings = append(findings, rules.PackageFinding{
 					Description: lang.UnsetVarLintWarning,
-					Severity:    types.SevWarn,
+					Severity:    rules.SevWarn,
 				})
 			}
 		}

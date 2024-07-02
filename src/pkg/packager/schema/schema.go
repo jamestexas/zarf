@@ -10,8 +10,8 @@ import (
 	"regexp"
 
 	"github.com/defenseunicorns/zarf/src/pkg/layout"
+	"github.com/defenseunicorns/zarf/src/pkg/packager/rules"
 	"github.com/defenseunicorns/zarf/src/pkg/utils"
-	"github.com/defenseunicorns/zarf/src/types"
 	"github.com/xeipuuv/gojsonschema"
 )
 
@@ -19,7 +19,7 @@ import (
 var ZarfSchema fs.ReadFileFS
 
 // Validate checks the Zarf package in the current directory against the Zarf schema
-func Validate() ([]types.PackageFinding, error) {
+func Validate() ([]rules.PackageFinding, error) {
 
 	var untypedZarfPackage interface{}
 	if err := utils.ReadYaml(layout.ZarfYAML, &untypedZarfPackage); err != nil {
@@ -47,8 +47,8 @@ func makeFieldPathYqCompat(field string) string {
 	return fmt.Sprintf(".%s", wrappedField)
 }
 
-func validateSchema(jsonSchema []byte, untypedZarfPackage interface{}) ([]types.PackageFinding, error) {
-	var findings []types.PackageFinding
+func validateSchema(jsonSchema []byte, untypedZarfPackage interface{}) ([]rules.PackageFinding, error) {
+	var findings []rules.PackageFinding
 
 	schemaErrors, err := runSchema(jsonSchema, untypedZarfPackage)
 	if err != nil {
@@ -57,10 +57,10 @@ func validateSchema(jsonSchema []byte, untypedZarfPackage interface{}) ([]types.
 
 	if len(schemaErrors) != 0 {
 		for _, schemaErr := range schemaErrors {
-			findings = append(findings, types.PackageFinding{
+			findings = append(findings, rules.PackageFinding{
 				YqPath:      makeFieldPathYqCompat(schemaErr.Field()),
 				Description: schemaErr.Description(),
-				Severity:    types.SevErr,
+				Severity:    rules.SevErr,
 			})
 		}
 	}

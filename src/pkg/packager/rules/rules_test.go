@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // SPDX-FileCopyrightText: 2021-Present The Zarf Authors
 
-// Package rules verifies that Zarf packages are following best practices.
+// Package rules verifies that Zarf packages are following best practices
 package rules
 
 import (
@@ -23,11 +23,11 @@ func TestValidateComponent(t *testing.T) {
 			"https://dev.azure.com/defenseunicorns/zarf-public-test/_git/zarf-public-test@v0.0.1",
 		}}
 		findings := checkForUnpinnedRepos(component, 0)
-		expected := []types.PackageFinding{
+		expected := []PackageFinding{
 			{
 				Item:        unpinnedRepo,
 				Description: "Unpinned repository",
-				Severity:    types.SevWarn,
+				Severity:    SevWarn,
 				YqPath:      ".components.[0].repos.[0]",
 			},
 		}
@@ -44,17 +44,17 @@ func TestValidateComponent(t *testing.T) {
 			badImage,
 		}}
 		findings := checkForUnpinnedImages(component, 0)
-		expected := []types.PackageFinding{
+		expected := []PackageFinding{
 			{
 				Item:        unpinnedImage,
 				Description: "Image not pinned with digest",
-				Severity:    types.SevWarn,
+				Severity:    SevWarn,
 				YqPath:      ".components.[0].images.[0]",
 			},
 			{
 				Item:        badImage,
 				Description: "Failed to parse image reference",
-				Severity:    types.SevWarn,
+				Severity:    SevWarn,
 				YqPath:      ".components.[0].images.[2]",
 			},
 		}
@@ -79,11 +79,11 @@ func TestValidateComponent(t *testing.T) {
 		}
 		component := types.ZarfComponent{Files: zarfFiles}
 		findings := checkForUnpinnedFiles(component, 0)
-		expectedErr := []types.PackageFinding{
+		expectedErr := []PackageFinding{
 			{
 				Item:        fileURL,
 				Description: "No shasum for remote file",
-				Severity:    types.SevWarn,
+				Severity:    SevWarn,
 				YqPath:      ".components.[0].files.[0]",
 			},
 		}

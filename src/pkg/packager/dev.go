@@ -18,6 +18,7 @@ import (
 	"github.com/defenseunicorns/zarf/src/pkg/packager/creator"
 	"github.com/defenseunicorns/zarf/src/pkg/packager/filters"
 	"github.com/defenseunicorns/zarf/src/pkg/packager/lint"
+	"github.com/defenseunicorns/zarf/src/pkg/packager/rules"
 	"github.com/defenseunicorns/zarf/src/pkg/utils"
 	"github.com/defenseunicorns/zarf/src/types"
 )
@@ -132,9 +133,9 @@ func (p *Packager) Lint(ctx context.Context) (err error) {
 		return nil
 	}
 
-	lint.PrintFindings(lintFindings, types.SevWarn, p.cfg.CreateOpts.BaseDir, p.cfg.Pkg.Metadata.Name)
+	rules.PrintFindings(lintFindings, rules.SevWarn, p.cfg.CreateOpts.BaseDir, p.cfg.Pkg.Metadata.Name)
 
-	if lint.HasSeverity(lintFindings, types.SevErr) {
+	if rules.HasSeverity(lintFindings, rules.SevErr) {
 		return errors.New("errors during lint")
 	}
 

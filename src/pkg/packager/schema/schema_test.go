@@ -9,6 +9,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/defenseunicorns/zarf/src/pkg/packager/rules"
 	"github.com/defenseunicorns/zarf/src/pkg/variables"
 	"github.com/defenseunicorns/zarf/src/types"
 	goyaml "github.com/goccy/go-yaml"
@@ -178,10 +179,10 @@ components:
 			},
 		})
 		require.NoError(t, err)
-		expected := []types.PackageFinding{
+		expected := []rules.PackageFinding{
 			{
 				Description: "Invalid type. Expected: array, given: null",
-				Severity:    types.SevErr,
+				Severity:    rules.SevErr,
 				YqPath:      ".components",
 			},
 		}

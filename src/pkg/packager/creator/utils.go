@@ -14,7 +14,7 @@ import (
 	"github.com/defenseunicorns/zarf/src/config"
 	"github.com/defenseunicorns/zarf/src/pkg/layout"
 	"github.com/defenseunicorns/zarf/src/pkg/packager/deprecated"
-	"github.com/defenseunicorns/zarf/src/pkg/packager/lint"
+	"github.com/defenseunicorns/zarf/src/pkg/packager/rules"
 	"github.com/defenseunicorns/zarf/src/pkg/packager/schema"
 	"github.com/defenseunicorns/zarf/src/types"
 )
@@ -29,8 +29,8 @@ func validate(createOpts types.ZarfCreateOptions, pkg types.ZarfPackage) error {
 		return fmt.Errorf("unable to check schema: %w", err)
 	}
 
-	lint.PrintFindings(findings, types.SevErr, createOpts.BaseDir, pkg.Metadata.Name)
-	if lint.HasSeverity(findings, types.SevErr) {
+	rules.PrintFindings(findings, rules.SevErr, createOpts.BaseDir, pkg.Metadata.Name)
+	if rules.HasSeverity(findings, rules.SevErr) {
 		return fmt.Errorf("found errors in package")
 	}
 
