@@ -35,7 +35,7 @@ type Packager struct {
 	state          *types.ZarfState
 	cluster        *cluster.Cluster
 	layout         *layout.PackagePaths
-	warnings       []types.PackageFinding
+	warnings       []string
 	hpaModified    bool
 	connectStrings types.ConnectStrings
 	sbomViewFiles  []string
@@ -115,24 +115,6 @@ func New(cfg *types.PackagerConfig, mods ...Modifier) (*Packager, error) {
 	}
 
 	return pkgr, nil
-}
-
-/*
-NewOrDie creates a new package instance with the provided config or throws a fatal error.
-
-Note: This function creates a tmp directory that should be cleaned up with p.ClearTempPaths().
-*/
-func NewOrDie(config *types.PackagerConfig, mods ...Modifier) *Packager {
-	var (
-		err  error
-		pkgr *Packager
-	)
-
-	if pkgr, err = New(config, mods...); err != nil {
-		message.Fatalf(err, "Unable to setup the package config: %s", err.Error())
-	}
-
-	return pkgr
 }
 
 // setTempDirectory sets the temp directory for the packager.
@@ -269,7 +251,7 @@ func (p *Packager) validateLastNonBreakingVersion() (err error) {
 	cliSemVer, err := semver.NewVersion(cliVersion)
 	if err != nil {
 		warning := fmt.Sprintf(lang.CmdPackageDeployInvalidCLIVersionWarn, config.CLIVersion)
-		p.warnings = append(p.warnings, types.PackageFinding{Description: warning, Severity: types.SevWarn})
+		p.warnings = append(p.warnings, warning)
 		return nil
 	}
 
@@ -280,7 +262,7 @@ func (p *Packager) validateLastNonBreakingVersion() (err error) {
 			lastNonBreakingVersion,
 			lastNonBreakingVersion,
 		)
-		p.warnings = append(p.warnings, types.PackageFinding{Description: warning, Severity: types.SevWarn})
+		p.warnings = append(p.warnings, warning)
 	}
 
 	return nil

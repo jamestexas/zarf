@@ -65,9 +65,8 @@ func (p *Packager) FindImages(ctx context.Context) (imgMap map[string][]string, 
 		return nil, err
 	}
 
-	// TODO this should print out the lint table
 	for _, warning := range p.warnings {
-		message.Warn(warning.Description)
+		message.Warn(warning)
 	}
 
 	return p.findImages()

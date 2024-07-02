@@ -78,7 +78,7 @@ func (p *Packager) Deploy(ctx context.Context) (err error) {
 		return err
 	}
 
-	var sbomWarnings []types.PackageFinding
+	var sbomWarnings []string
 	p.sbomViewFiles, sbomWarnings, err = p.layout.SBOMs.StageSBOMViewFiles()
 	if err != nil {
 		return err
@@ -472,7 +472,7 @@ func (p *Packager) setupState(ctx context.Context) (err error) {
 			return nil
 		}()
 		if err != nil {
-			spinner.Fatalf(err, "Unable to create the zarf namespace")
+			return fmt.Errorf("unable to create the Zarf namespace: %w", err)
 		}
 	}
 

@@ -37,7 +37,7 @@ func validate(createOpts types.ZarfCreateOptions, pkg types.ZarfPackage) error {
 	return nil
 }
 
-func loadWithValidate(ctx context.Context, c Creator, src *layout.PackagePaths) (types.ZarfPackage, []types.PackageFinding, error) {
+func loadWithValidate(ctx context.Context, c Creator, src *layout.PackagePaths) (types.ZarfPackage, []string, error) {
 	pkg, warnings, err := c.LoadPackageDefinition(ctx, src)
 	if err != nil {
 		return types.ZarfPackage{}, nil, err

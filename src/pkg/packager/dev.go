@@ -18,6 +18,7 @@ import (
 	"github.com/defenseunicorns/zarf/src/pkg/packager/creator"
 	"github.com/defenseunicorns/zarf/src/pkg/packager/filters"
 	"github.com/defenseunicorns/zarf/src/pkg/packager/lint"
+	"github.com/defenseunicorns/zarf/src/pkg/utils"
 	"github.com/defenseunicorns/zarf/src/types"
 )
 
@@ -111,40 +112,29 @@ func (p *Packager) DevDeploy(ctx context.Context) error {
 // Lint ensures a package is valid & follows suggested conventions
 func (p *Packager) Lint(ctx context.Context) (err error) {
 	config.CommonOptions.Confirm = true
-	cwd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
 
 	if err := os.Chdir(p.cfg.CreateOpts.BaseDir); err != nil {
 		return fmt.Errorf("unable to access directory %q: %w", p.cfg.CreateOpts.BaseDir, err)
 	}
 
-	pc := creator.NewPackageCreator(p.cfg.CreateOpts, cwd)
-
-	if err := helpers.CreatePathAndCopy(layout.ZarfYAML, p.layout.ZarfYAML); err != nil {
+	var pkg types.ZarfPackage
+	if err := utils.ReadYaml(layout.ZarfYAML, &pkg); err != nil {
 		return err
 	}
 
-	p.cfg.Pkg, p.warnings, err = pc.LoadPackageDefinition(ctx, p.layout)
-	if err != nil {
-		return err
-	}
-
-	lintFindings, err := lint.Validate(ctx, p.cfg.Pkg, p.cfg.CreateOpts)
+	lintFindings, err := lint.Validate(ctx, pkg, p.cfg.CreateOpts)
 	if err != nil {
 		return fmt.Errorf("linting failed: %w", err)
 	}
-	p.warnings = append(p.warnings, lintFindings...)
 
-	if len(p.warnings) == 0 {
+	if len(lintFindings) == 0 {
 		message.Successf("0 findings for %q", p.cfg.Pkg.Metadata.Name)
 		return nil
 	}
 
-	lint.PrintFindings(p.warnings, types.SevWarn, p.cfg.CreateOpts.BaseDir, p.cfg.Pkg.Metadata.Name)
+	lint.PrintFindings(lintFindings, types.SevWarn, p.cfg.CreateOpts.BaseDir, p.cfg.Pkg.Metadata.Name)
 
-	if lint.HasSeverity(p.warnings, types.SevErr) {
+	if lint.HasSeverity(lintFindings, types.SevErr) {
 		return errors.New("errors during lint")
 	}
 

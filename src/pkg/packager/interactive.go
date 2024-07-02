@@ -57,9 +57,8 @@ func (p *Packager) confirmAction(stage string) (confirm bool) {
 	if len(p.warnings) > 0 {
 		message.HorizontalRule()
 		message.Title("Package Warnings", "the following warnings were flagged while reading the package")
-		// TODO we should print a table similar to the lint table here as well
 		for _, warning := range p.warnings {
-			message.Warn(warning.Description)
+			message.Warn(warning)
 		}
 	}
 
