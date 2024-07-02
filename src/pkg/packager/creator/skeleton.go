@@ -71,17 +71,16 @@ func (sc *SkeletonCreator) LoadPackageDefinition(ctx context.Context, src *layou
 		message.Warn(warning)
 	}
 
+	if err := sc.Validate(ctx, pkg); err != nil {
+		return types.ZarfPackage{}, nil, err
+	}
+
 	return pkg, warnings, nil
 }
 
 // Validate ensures that the package is valid
 func (sc *SkeletonCreator) Validate(_ context.Context, pkg types.ZarfPackage) error {
 	return validate(sc.createOpts, pkg)
-}
-
-// LoadPackageDefinitionWithValidate loads and validates the zarf package
-func (sc *SkeletonCreator) LoadPackageDefinitionWithValidate(ctx context.Context, src *layout.PackagePaths) (pkg types.ZarfPackage, warnings []string, err error) {
-	return loadWithValidate(ctx, sc, src)
 }
 
 // Assemble updates all components of the loaded Zarf package with necessary modifications for package assembly.

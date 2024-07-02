@@ -5,14 +5,12 @@
 package creator
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"runtime"
 	"time"
 
 	"github.com/defenseunicorns/zarf/src/config"
-	"github.com/defenseunicorns/zarf/src/pkg/layout"
 	"github.com/defenseunicorns/zarf/src/pkg/packager/deprecated"
 	"github.com/defenseunicorns/zarf/src/pkg/packager/rules"
 	"github.com/defenseunicorns/zarf/src/pkg/packager/schema"
@@ -35,18 +33,6 @@ func validate(createOpts types.ZarfCreateOptions, pkg types.ZarfPackage) error {
 	}
 
 	return nil
-}
-
-func loadWithValidate(ctx context.Context, c Creator, src *layout.PackagePaths) (types.ZarfPackage, []string, error) {
-	pkg, warnings, err := c.LoadPackageDefinition(ctx, src)
-	if err != nil {
-		return types.ZarfPackage{}, nil, err
-	}
-	err = c.Validate(ctx, pkg)
-	if err != nil {
-		return types.ZarfPackage{}, nil, err
-	}
-	return pkg, warnings, err
 }
 
 // recordPackageMetadata records various package metadata during package create.

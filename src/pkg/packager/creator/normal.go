@@ -119,17 +119,16 @@ func (pc *PackageCreator) LoadPackageDefinition(ctx context.Context, src *layout
 		}
 	}
 
+	if err := pc.Validate(ctx, pkg); err != nil {
+		return types.ZarfPackage{}, nil, err
+	}
+
 	return pkg, warnings, nil
 }
 
 // Validate ensures that the package is valid
 func (pc *PackageCreator) Validate(_ context.Context, pkg types.ZarfPackage) error {
 	return validate(pc.createOpts, pkg)
-}
-
-// LoadPackageDefinitionWithValidate loads and validates a zarf.yaml file during package create
-func (pc *PackageCreator) LoadPackageDefinitionWithValidate(ctx context.Context, src *layout.PackagePaths) (pkg types.ZarfPackage, warnings []string, err error) {
-	return loadWithValidate(ctx, pc, src)
 }
 
 // Assemble assembles all of the package assets into Zarf's tmp directory layout.

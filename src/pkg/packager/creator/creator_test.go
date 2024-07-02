@@ -82,7 +82,7 @@ func TestLoadPackageDefinitionWithValidate(t *testing.T) {
 			require.NoError(t, err)
 
 			src := layout.New(".")
-			pkg, _, err := tt.creator.LoadPackageDefinitionWithValidate(context.Background(), src)
+			pkg, _, err := tt.creator.LoadPackageDefinition(context.Background(), src)
 
 			if tt.expectedErr == "" {
 				require.NoError(t, err)
