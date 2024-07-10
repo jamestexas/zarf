@@ -97,7 +97,7 @@ The following are (behavior driven development)[https://en.wikipedia.org/wiki/Be
 - As long as the only deprecated features in a package have migration path, and the package was built after the feature was deprecated so migrations were run, Zarf will be successful both creating a package with v1 and deploying with v0, and creating a package with v0 and deploying with v1.
 - Users of deprecated group, cosignKeyPath, and action.Wait outside of onDeploy might be frustrated if their packages, created v0, error out on Zarf v1, however this is preferable to unexpected behavior occurring in the cluster.
 - Users may be frustrated that they have to run `zarf dev update-schema` to edit their `zarf.yaml` to remove the deprecated fields and add `apiVersion`.
-- We will have to have two different schema types which will be mostly be duplicate code. However the original type should never change, which mitigates much of the issue.
+- The Zarf codebase will contain two Zarf package objects, v1 and v0. Many fields on these objects will be unchanged across v0 and v1, however, v0 will not include new fields, and v1 will exclude deprecated fields. This approach is similar to the strategies used by (Kubernetes)[https://github.com/kubernetes/api/tree/master/storage] & [flux](https://github.com/fluxcd/source-controller/tree/main/api)
 - By having a zarf.yaml and a zarfv1.yaml it will be easy to read and write from objects to yamls directly without having to include deprecated v0 fields in the v1 schema. However, this will also mean any new keys in v1 won't exist in the `zarf.yaml` so a v0 deploy of a v1 package will not be able to warn users of unrecognized keys, we will have to use some other method.
 
 Below is an example v1 zarf.yaml with, somewhat, reasonable & nonempty values for every key
@@ -106,7 +106,7 @@ kind: ZarfPackageConfig
 apiVersion: v1
 metadata:
   name: everything-zarf-package
-  description: A zarf package with a non empty value for every
+  description: A v1 zarf package with a non empty value for every key
   version: v1.0.0
   uncompressed: true
   architecture: amd64
