@@ -94,11 +94,11 @@ The following are (behavior driven development)[https://en.wikipedia.org/wiki/Be
 - *then* Zarf v0 will deploy the package without issues. If there are fields unrecognized by the v0 schema, then the user will be warned they are deploying a package that has features that do not exist in the current version of Zarf.
 
 ## Consequences
-- As long as the only deprecated features in a package have migration path, and the package was built after the feature was deprecated so migrations were run, Zarf will be successful both creating a package with v1 and deploying with v0, and creating a package with v0 and deploying with v1.
-- Users of deprecated group, cosignKeyPath, and action.Wait outside of onDeploy might be frustrated if their packages, created v0, error out on Zarf v1, however this is preferable to unexpected behavior occurring in the cluster.
+- As long as the only deprecated features in a package have migration path, and the package was built after the feature was deprecated so migrations were run, Zarf will be successful in both creating a package with v1 and deploying with v0, and creating a package with v0 and deploying with v1.
+- Users of deprecated `group`, `cosignKeyPath`, and `action.Wait` keys outside of `onDeploy` might be frustrated if their packages, created v0, error out on Zarf v1, however this is preferable to unexpected behavior occurring in the cluster.
 - Users may be frustrated that they have to run `zarf dev update-schema` to edit their `zarf.yaml` to remove the deprecated fields and add `apiVersion`.
 - We will have to have two different schema types which will be mostly be duplicate code. However the original type should never change, which mitigates much of the issue.
-- By having a zarf.yaml and a zarfv1.yaml it will be easy to read and write from objects to yamls directly without having to include deprecated v0 fields in the v1 schema. However, this will also mean any new keys in v1 won't exist in the `zarf.yaml` so a v0 deploy of a v1 package will not be able to warn users of unrecognized keys, we will have to use some other method.
+- By having a `zarf.yaml` and a `zarfv1.yaml` it will be easy to read and write from objects to yaml files directly without having to include deprecated v0 fields in the v1 schema. However, this will also mean that any new keys in v1 won't exist in the `zarf.yaml` so a v0 deploy of a v1 package will not be able to warn users of unrecognized keys, we will have to use some other method.
 
 Below is an example v1 zarf.yaml with, somewhat, reasonable & nonempty values for every key
 ```yaml
