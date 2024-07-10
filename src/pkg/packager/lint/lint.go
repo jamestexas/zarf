@@ -6,10 +6,14 @@ package lint
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"os"
 
 	"github.com/defenseunicorns/zarf/src/config"
 	"github.com/defenseunicorns/zarf/src/config/lang"
+	"github.com/defenseunicorns/zarf/src/pkg/layout"
+	"github.com/defenseunicorns/zarf/src/pkg/message"
 	"github.com/defenseunicorns/zarf/src/pkg/packager/composer"
 	"github.com/defenseunicorns/zarf/src/pkg/packager/rules"
 	"github.com/defenseunicorns/zarf/src/pkg/packager/schema"
@@ -17,22 +21,42 @@ import (
 	"github.com/defenseunicorns/zarf/src/types"
 )
 
-// Validate the given Zarf package. The Zarf package should not already be composed when sent to this function.
-func Validate(ctx context.Context, pkg types.ZarfPackage, createOpts types.ZarfCreateOptions) ([]rules.PackageFinding, error) {
+// Validate lints the given Zarf package
+func Validate(ctx context.Context, createOpts types.ZarfCreateOptions) error {
 	var findings []rules.PackageFinding
+	if err := os.Chdir(createOpts.BaseDir); err != nil {
+		return fmt.Errorf("unable to access directory %q: %w", createOpts.BaseDir, err)
+	}
+
+	var pkg types.ZarfPackage
+	if err := utils.ReadYaml(layout.ZarfYAML, &pkg); err != nil {
+		return err
+	}
+
 	compFindings, err := lintComponents(ctx, pkg, createOpts)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	findings = append(findings, compFindings...)
 
 	schemaFindings, err := schema.Validate()
 	if err != nil {
-		return nil, err
+		return err
 	}
 	findings = append(findings, schemaFindings...)
 
-	return findings, nil
+	if len(findings) == 0 {
+		message.Successf("0 findings for %q", pkg.Metadata.Name)
+		return nil
+	}
+
+	rules.PrintFindings(findings, rules.SevWarn, createOpts.BaseDir, pkg.Metadata.Name)
+
+	if rules.HasSeverity(findings, rules.SevErr) {
+		return errors.New("errors during lint")
+	}
+
+	return nil
 }
 
 func lintComponents(ctx context.Context, pkg types.ZarfPackage, createOpts types.ZarfCreateOptions) ([]rules.PackageFinding, error) {
