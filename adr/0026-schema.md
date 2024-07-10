@@ -64,7 +64,7 @@ In summary, a `wait` block will be auto migrated if, and only if:
   - it is `onDeploy.after`
   - the condition is `ready`, `available` or equivalent
   - The kind is not a custom resource.
-- actions will change... TODO @schristoff
+- There may be further, more holistic changes to how actions works within Zarf that would have a significant affect on the schema. This will be covered in a separate ADR.
 
 ### BDD scenarios
 The following are (behavior driven development)[https://en.wikipedia.org/wiki/Behavior-driven_development] scenarios to provide context of what Zarf will do in specific situations given the above decisions.
