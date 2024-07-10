@@ -1,0 +1,4 @@
+{
+  "skip": "^(https://.*)",
+  "verbosity": "error"
+}

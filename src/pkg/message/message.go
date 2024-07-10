@@ -5,12 +5,9 @@
 package message
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
-	"runtime/debug"
 	"strings"
 	"time"
 
@@ -18,7 +15,6 @@ import (
 	"github.com/defenseunicorns/zarf/src/config"
 	"github.com/fatih/color"
 	"github.com/pterm/pterm"
-	"github.com/sergi/go-diff/diffmatchpatch"
 )
 
 // LogLevel is the level of logging to display.
@@ -98,11 +94,6 @@ func SetLogLevel(lvl LogLevel) {
 	}
 }
 
-// GetLogLevel returns the current log level.
-func GetLogLevel() LogLevel {
-	return logLevel
-}
-
 // DisableColor disables color in output
 func DisableColor() {
 	pterm.DisableColor()
@@ -130,14 +121,6 @@ func Debugf(format string, a ...any) {
 	debugPrinter(2, message)
 }
 
-// ErrorWebf prints an error message and returns a web response.
-func ErrorWebf(err any, w http.ResponseWriter, format string, a ...any) {
-	debugPrinter(2, err)
-	message := fmt.Sprintf(format, a...)
-	Warn(message)
-	http.Error(w, message, http.StatusInternalServerError)
-}
-
 // Warn prints a warning message.
 func Warn(message string) {
 	Warnf("%s", message)
@@ -160,20 +143,6 @@ func WarnErr(err any, message string) {
 func WarnErrf(err any, format string, a ...any) {
 	debugPrinter(2, err)
 	Warnf(format, a...)
-}
-
-// Fatal prints a fatal error message and exits with a 1.
-func Fatal(err any, message string) {
-	debugPrinter(2, err)
-	errorPrinter(2).Println(message)
-	debugPrinter(2, string(debug.Stack()))
-	os.Exit(1)
-}
-
-// Fatalf prints a fatal error message and exits with a 1 with a given format.
-func Fatalf(err any, format string, a ...any) {
-	message := Paragraph(format, a...)
-	Fatal(err, message)
 }
 
 // Info prints an info message.
@@ -257,15 +226,6 @@ func HorizontalRule() {
 	pterm.Println(RuleLine)
 }
 
-// JSONValue prints any value as JSON.
-func JSONValue(value any) string {
-	bytes, err := json.MarshalIndent(value, "", "  ")
-	if err != nil {
-		debugPrinter(2, fmt.Sprintf("ERROR marshalling json: %s", err.Error()))
-	}
-	return string(bytes)
-}
-
 // Paragraph formats text into a paragraph matching the TermWidth
 func Paragraph(format string, a ...any) string {
 	return Paragraphn(TermWidth, format, a...)
@@ -282,17 +242,6 @@ func Paragraphn(n int, format string, a ...any) string {
 	}
 
 	return strings.Join(formattedLines, "\n")
-}
-
-// PrintDiff prints the differences between a and b with a as original and b as new
-func PrintDiff(textA, textB string) {
-	dmp := diffmatchpatch.New()
-
-	diffs := dmp.DiffMain(textA, textB, true)
-
-	diffs = dmp.DiffCleanupSemantic(diffs)
-
-	pterm.Println(dmp.DiffPrettyText(diffs))
 }
 
 // Table prints a padded table containing the specified header and data
@@ -327,7 +276,7 @@ func Table(header []string, data [][]string) {
 // preventing future characters from taking on the given color
 // returns string as normal if color is disabled
 func ColorWrap(str string, attr color.Attribute) string {
-	if config.NoColor {
+	if config.NoColor || str == "" {
 		return str
 	}
 	return fmt.Sprintf("\x1b[%dm%s\x1b[0m", attr, str)
@@ -350,8 +299,4 @@ func debugPrinter(offset int, a ...any) {
 			WithWriter(logFile).
 			Println(a...)
 	}
-}
-
-func errorPrinter(offset int) *pterm.PrefixPrinter {
-	return pterm.Error.WithShowLineNumber(logLevel > 2).WithLineNumberOffset(offset)
 }

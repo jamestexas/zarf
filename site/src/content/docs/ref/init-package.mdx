@@ -88,7 +88,7 @@ It leverages the same `docker-registry` chart used in `zarf-seed-registry` but w
 
 1. The `image.repository` is set to the value of the built-in variable `###ZARF_REGISTRY###` which is set at runtime to the registry hosted by `zarf-seed-registry`.
 {/* you know, why DO we do this? if we kept the repository the same, and kept running the injector, couldnt this handle cluster full-deaths??? (ofc would need to tweak the zarf-agent to not mutate the image.repository for the docker-registry chart under the zarf namespace, but i think it might be doable) */}
-2. A `connect` manifest for running [`zarf connect registry`](/commands/zarf_connect_registry/) to tunnel to the Zarf Registry.
+2. A `connect` manifest for running [`zarf connect registry`](/commands/zarf_connect/) to tunnel to the Zarf Registry.
 3. A configmap to satisfy [KEP-1755](https://github.com/kubernetes/enhancements/tree/master/keps/sig-cluster-lifecycle/generic/1755-communicating-a-local-registry)
 
 :::tip
@@ -151,13 +151,21 @@ Notably, the `REGISTRY_AFFINITY_CUSTOM` variable overrides the default pod anti-
 
 The `zarf-agent` is a [Kubernetes Mutating Webhook](https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#mutatingadmissionwebhook) that intercepts requests to create resources and uses the `zarf-state` secret to mutate them to point to their air-gapped equivalents.
 
-The `zarf-agent` is responsible for modifying [Kubernetes PodSpec](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#PodSpec) objects [Image](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#Container.Image) fields to point to the Zarf Registry.
+The `zarf-agent` is responsible for modifying [Kubernetes PodSpec](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#PodSpec) objects [Image](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#Container.Image) fields to point to the Zarf Registry. This allows the cluster to pull images from the Zarf Registry instead of the internet without having to modify the original image references.
 
-This allows the cluster to pull images from the Zarf Registry instead of the internet without having to modify the original image references.
+The `zarf-agent` modifies the following [flux](https://fluxcd.io/flux/) resources: [GitRepository](https://fluxcd.io/docs/components/source/gitrepositories/), [OCIRepository](https://fluxcd.io/flux/components/source/ocirepositories/), & [HelmRepository](https://fluxcd.io/flux/components/source/helmrepositories/) to point to the local Git Server or Zarf Registry. HelmRepositories are only modified if the `type` key is set to `oci`.
 
-The `zarf-agent` also modifies [Flux GitRepository](https://fluxcd.io/docs/components/source/gitrepositories/) objects to point to the local Git Server.
+> Support for mutating OCIRepository and HelmRepository objects is in [`alpha`](/roadmap#alpha) and should be tested on non-production clusters before being deployed to production clusters.
 
-> Support for mutating `Application` and `Repository` objects in ArgoCD is in [`beta`](/roadmap#beta) and should tested on non-production clusters before being deployed to production clusters.
+:::caution
+
+Due to a bug in helm, HelmRepositories with an insecure registry must use IP address instead of a hostname. This is not an issue with the internal Zarf registry, which is always an IP address, but will cause Flux HelmRepositories to break if Zarf is using an external http registry with a hostname.
+
+:::
+
+The `zarf-agent` modifies [ArgoCD applications](https://argo-cd.readthedocs.io/en/stable/user-guide/application-specification/) & [ArgoCD Repositories](https://argo-cd.readthedocs.io/en/stable/user-guide/private-repositories/)  objects to point to the local Git Server.
+
+> Support for mutating `Application` and `Repository` objects in ArgoCD is in [`beta`](/roadmap#beta) and should be tested on non-production clusters before being deployed to production clusters.
 
 :::note
 
@@ -184,7 +192,6 @@ The Zarf team maintains some optional components in the default 'init' package.
 | Components   | Description                                                                                                                                                       |
 | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | k3s          | REQUIRES ROOT (not sudo). Installs a lightweight Kubernetes Cluster on the local host [K3s](https://k3s.io/) and configures it to start up on boot.   |
-| logging      | Adds a log monitoring stack [promtail/loki/grafana (aka PLG)](https://github.com/grafana/loki) into the cluster.                                      |
 | git-server   | Adds a [GitOps](https://about.gitlab.com/topics/gitops/)-compatible source control service [Gitea](https://gitea.io/en-us/) into the cluster. |
 
 There are two ways to deploy these optional components. First, you can provide a comma-separated list of components to the `--components` flag, such as `zarf init --components k3s,git-server --confirm`, or, you can choose to exclude the `--components` and `--confirm` flags and respond with a yes (`y`) or no (`n`) for each optional component when interactively prompted.
@@ -271,7 +278,7 @@ cd zarf
 mv zarf.yaml zarf.yaml.bak
 ```
 
-You can learn more about creating a custom init package in the [Creating a Custom 'init' Package Tutorial](/tutorials/8-custom-init-packages).
+You can learn more about creating a custom init package in the [Creating a Custom 'init' Package Tutorial](/tutorials/7-custom-init-packages).
 
 :::
 

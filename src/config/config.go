@@ -5,7 +5,6 @@
 package config
 
 import (
-	"embed"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -20,14 +19,7 @@ import (
 const (
 	GithubProject = "defenseunicorns/zarf"
 
-	// ZarfMaxChartNameLength limits helm chart name size to account for K8s/helm limits and zarf prefix
-	ZarfMaxChartNameLength = 40
-
 	ZarfAgentHost = "agent-hook.zarf.svc"
-
-	ZarfConnectLabelName             = "zarf.dev/connect-name"
-	ZarfConnectAnnotationDescription = "zarf.dev/connect-description"
-	ZarfConnectAnnotationURL         = "zarf.dev/connect-url"
 
 	ZarfCleanupScriptsPath = "/opt/zarf"
 
@@ -44,8 +36,6 @@ const (
 
 	ZarfImagePullSecretName = "private-registry"
 	ZarfGitServerSecretName = "private-git-server"
-
-	ZarfLoggingUser = "zarf-admin"
 
 	UnsetCLIVersion = "unset-development-only"
 )
@@ -77,7 +67,6 @@ var (
 	NoColor bool
 
 	CosignPublicKey string
-	ZarfSchema      embed.FS
 
 	// Timestamp of when the CLI was started
 	operationStartTime  = time.Now().Unix()
