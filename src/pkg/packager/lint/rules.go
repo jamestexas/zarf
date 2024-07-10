@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // SPDX-FileCopyrightText: 2021-Present The Zarf Authors
 
-// Package rules verifies that Zarf packages are following best practices.
-package rules
+// Package lint contains functions for verifying zarf yaml files are valid
+package lint
 
 import (
 	"fmt"
@@ -36,42 +36,6 @@ func CheckComponentValues(c types.ZarfComponent, i int) []PackageFinding {
 	findings = append(findings, checkForUnpinnedImages(c, i)...)
 	findings = append(findings, checkForUnpinnedFiles(c, i)...)
 	return findings
-}
-
-// CheckComponentKeys runs lint rules validating keys on components, can be run before templating
-func CheckComponentKeys(c types.ZarfComponent, i int) []PackageFinding {
-	var findings []PackageFinding
-	finding, hasGroup := checkForGroup(c, i)
-	if hasGroup {
-		findings = append(findings, finding)
-	}
-	finding, hasCosign := checkForCosignKeyPath(c, i)
-	if hasCosign {
-		findings = append(findings, finding)
-	}
-	return findings
-}
-
-func checkForGroup(c types.ZarfComponent, i int) (PackageFinding, bool) {
-	if c.DeprecatedGroup != "" {
-		return PackageFinding{
-			YqPath:      fmt.Sprintf(".components.[%d].group", i),
-			Description: fmt.Sprintf("Component %s is using group which has been deprecated and will be removed in v1.0.0", c.Name),
-			Severity:    SevWarn,
-		}, true
-	}
-	return PackageFinding{}, false
-}
-
-func checkForCosignKeyPath(c types.ZarfComponent, i int) (PackageFinding, bool) {
-	if c.DeprecatedCosignKeyPath != "" {
-		return PackageFinding{
-			YqPath:      fmt.Sprintf(".components.[%d].cosignKeyPath", i),
-			Description: fmt.Sprintf("Component %s is using cosignKeyPath which has been deprecated and will be removed in v1.0.0", c.Name),
-			Severity:    SevWarn,
-		}, true
-	}
-	return PackageFinding{}, false
 }
 
 func checkForUnpinnedRepos(c types.ZarfComponent, i int) []PackageFinding {

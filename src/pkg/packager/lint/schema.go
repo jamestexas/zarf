@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // SPDX-FileCopyrightText: 2021-Present The Zarf Authors
 
-// Package schema verifies that Zarf packages follow the Zarf schema
-package schema
+// Package lint contains functions for verifying zarf yaml files are valid
+package lint
 
 import (
 	"fmt"
@@ -10,7 +10,6 @@ import (
 	"regexp"
 
 	"github.com/defenseunicorns/zarf/src/pkg/layout"
-	"github.com/defenseunicorns/zarf/src/pkg/packager/rules"
 	"github.com/defenseunicorns/zarf/src/pkg/utils"
 	"github.com/xeipuuv/gojsonschema"
 )
@@ -18,8 +17,8 @@ import (
 // ZarfSchema is exported so main.go can embed the schema file
 var ZarfSchema fs.ReadFileFS
 
-// Validate checks the Zarf package in the current directory against the Zarf schema
-func Validate() ([]rules.PackageFinding, error) {
+// ValidateSchema checks the Zarf package in the current directory against the Zarf schema
+func ValidateSchema() ([]PackageFinding, error) {
 
 	var untypedZarfPackage interface{}
 	if err := utils.ReadYaml(layout.ZarfYAML, &untypedZarfPackage); err != nil {
@@ -47,8 +46,8 @@ func makeFieldPathYqCompat(field string) string {
 	return fmt.Sprintf(".%s", wrappedField)
 }
 
-func validateSchema(jsonSchema []byte, untypedZarfPackage interface{}) ([]rules.PackageFinding, error) {
-	var findings []rules.PackageFinding
+func validateSchema(jsonSchema []byte, untypedZarfPackage interface{}) ([]PackageFinding, error) {
+	var findings []PackageFinding
 
 	schemaErrors, err := runSchema(jsonSchema, untypedZarfPackage)
 	if err != nil {
@@ -57,10 +56,10 @@ func validateSchema(jsonSchema []byte, untypedZarfPackage interface{}) ([]rules.
 
 	if len(schemaErrors) != 0 {
 		for _, schemaErr := range schemaErrors {
-			findings = append(findings, rules.PackageFinding{
+			findings = append(findings, PackageFinding{
 				YqPath:      makeFieldPathYqCompat(schemaErr.Field()),
 				Description: schemaErr.Description(),
-				Severity:    rules.SevErr,
+				Severity:    SevErr,
 			})
 		}
 	}

@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 // SPDX-FileCopyrightText: 2021-Present The Zarf Authors
 
-// Package schema verifies that Zarf packages follow the Zarf schema
-package schema
+// Package lint contains functions for verifying zarf yaml files are valid
+package lint
 
 import (
 	"fmt"
 	"os"
 	"testing"
 
-	"github.com/defenseunicorns/zarf/src/pkg/packager/rules"
 	"github.com/defenseunicorns/zarf/src/pkg/variables"
 	"github.com/defenseunicorns/zarf/src/types"
 	goyaml "github.com/goccy/go-yaml"
@@ -179,10 +178,10 @@ components:
 			},
 		})
 		require.NoError(t, err)
-		expected := []rules.PackageFinding{
+		expected := []PackageFinding{
 			{
 				Description: "Invalid type. Expected: array, given: null",
-				Severity:    rules.SevErr,
+				Severity:    SevErr,
 				YqPath:      ".components",
 			},
 		}

@@ -16,7 +16,6 @@ import (
 	"github.com/defenseunicorns/zarf/src/pkg/interactive"
 	"github.com/defenseunicorns/zarf/src/pkg/message"
 	"github.com/defenseunicorns/zarf/src/pkg/packager/deprecated"
-	"github.com/defenseunicorns/zarf/src/pkg/packager/rules"
 	"github.com/defenseunicorns/zarf/src/pkg/utils"
 	"github.com/defenseunicorns/zarf/src/types"
 	"github.com/google/go-containerregistry/pkg/crane"
@@ -68,10 +67,6 @@ func (pp *PackagePaths) ReadZarfYAML() (pkg types.ZarfPackage, warnings []string
 			// Handle component configuration deprecations
 			pkg.Components[idx], componentWarnings = deprecated.MigrateComponent(pkg.Build, component)
 			warnings = append(warnings, componentWarnings...)
-			findings := rules.CheckComponentKeys(pkg.Components[idx], idx)
-			for _, finding := range findings {
-				warnings = append(warnings, finding.Description)
-			}
 		}
 	}
 

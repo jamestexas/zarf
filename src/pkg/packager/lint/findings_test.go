@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // SPDX-FileCopyrightText: 2021-Present The Zarf Authors
 
-// Package rules verifies that Zarf packages are following best practices.
-package rules
+// Package lint contains functions for verifying zarf yaml files are valid
+package lint
 
 import (
 	"testing"

@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	"github.com/defenseunicorns/zarf/src/pkg/layout"
-	"github.com/defenseunicorns/zarf/src/pkg/packager/schema"
+	"github.com/defenseunicorns/zarf/src/pkg/packager/lint"
 	"github.com/defenseunicorns/zarf/src/types"
 	"github.com/stretchr/testify/require"
 )
@@ -66,7 +66,7 @@ func TestLoadPackageDefinitionWithValidate(t *testing.T) {
 	}
 	b, err := os.ReadFile("../../../../zarf.schema.json")
 	require.NoError(t, err)
-	schema.ZarfSchema = &mockSchemaLoader{b: b}
+	lint.ZarfSchema = &mockSchemaLoader{b: b}
 
 	for _, tt := range tests {
 		tt := tt
