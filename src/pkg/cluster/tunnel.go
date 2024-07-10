@@ -23,15 +23,17 @@ import (
 	"k8s.io/client-go/transport/spdy"
 
 	"github.com/defenseunicorns/pkg/helpers/v2"
-	"github.com/defenseunicorns/zarf/src/config"
 	"github.com/defenseunicorns/zarf/src/pkg/message"
 	"github.com/defenseunicorns/zarf/src/types"
 )
 
 // Zarf specific connect strings
 const (
+	ZarfConnectLabelName             = "zarf.dev/connect-name"
+	ZarfConnectAnnotationDescription = "zarf.dev/connect-description"
+	ZarfConnectAnnotationURL         = "zarf.dev/connect-url"
+
 	ZarfRegistry = "REGISTRY"
-	ZarfLogging  = "LOGGING"
 	ZarfGit      = "GIT"
 	ZarfInjector = "INJECTOR"
 
@@ -65,33 +67,30 @@ func NewTunnelInfo(namespace, resourceType, resourceName, urlSuffix string, loca
 	}
 }
 
-// PrintConnectTable will print a table of all Zarf connect matches found in the cluster.
-func (c *Cluster) PrintConnectTable(ctx context.Context) error {
+// ListConnections will return a list of all Zarf connect matches found in the cluster.
+func (c *Cluster) ListConnections(ctx context.Context) (types.ConnectStrings, error) {
 	selector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
 		MatchExpressions: []metav1.LabelSelectorRequirement{{
 			Operator: metav1.LabelSelectorOpExists,
-			Key:      config.ZarfConnectLabelName,
+			Key:      ZarfConnectLabelName,
 		}},
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 	serviceList, err := c.Clientset.CoreV1().Services("").List(ctx, metav1.ListOptions{LabelSelector: selector.String()})
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	connections := make(types.ConnectStrings)
+	connections := types.ConnectStrings{}
 	for _, svc := range serviceList.Items {
-		name := svc.Labels[config.ZarfConnectLabelName]
-		// Add the connectString for processing later in the deployment.
+		name := svc.Labels[ZarfConnectLabelName]
 		connections[name] = types.ConnectString{
-			Description: svc.Annotations[config.ZarfConnectAnnotationDescription],
-			URL:         svc.Annotations[config.ZarfConnectAnnotationURL],
+			Description: svc.Annotations[ZarfConnectAnnotationDescription],
+			URL:         svc.Annotations[ZarfConnectAnnotationURL],
 		}
 	}
-	message.PrintConnectStringTable(connections)
-	return nil
+	return connections, nil
 }
 
 // Connect will establish a tunnel to the specified target.
@@ -107,28 +106,18 @@ func (c *Cluster) Connect(ctx context.Context, target string) (*Tunnel, error) {
 		zt.resourceName = ZarfRegistryName
 		zt.remotePort = ZarfRegistryPort
 		zt.urlSuffix = `/v2/_catalog`
-
-	case ZarfLogging:
-		zt.resourceName = "zarf-loki-stack-grafana"
-		zt.remotePort = 3000
-		// Start the logs with something useful.
-		zt.urlSuffix = `/monitor/explore?orgId=1&left=%5B"now-12h","now","Loki",%7B"refId":"Zarf%20Logs","expr":"%7Bnamespace%3D%5C"zarf%5C"%7D"%7D%5D`
-
 	case ZarfGit:
 		zt.resourceName = ZarfGitServerName
 		zt.remotePort = ZarfGitServerPort
-
 	case ZarfInjector:
 		zt.resourceName = ZarfInjectorName
 		zt.remotePort = ZarfInjectorPort
-
 	default:
 		if target != "" {
 			if zt, err = c.checkForZarfConnectLabel(ctx, target); err != nil {
 				return nil, fmt.Errorf("problem looking for a zarf connect label in the cluster: %s", err.Error())
 			}
 		}
-
 		if zt.resourceName == "" {
 			return nil, fmt.Errorf("missing resource name")
 		}
@@ -136,7 +125,6 @@ func (c *Cluster) Connect(ctx context.Context, target string) (*Tunnel, error) {
 			return nil, fmt.Errorf("missing remote port")
 		}
 	}
-
 	return c.ConnectTunnelInfo(ctx, zt)
 }
 
@@ -171,11 +159,11 @@ func (c *Cluster) ConnectToZarfRegistryEndpoint(ctx context.Context, registryInf
 		if err != nil {
 			return "", nil, err
 		}
-		namespace, name, port, err := serviceInfoFromNodePortURL(serviceList.Items, registryInfo.Address)
+		svc, port, err := serviceInfoFromNodePortURL(serviceList.Items, registryInfo.Address)
 
 		// If this is a service (no error getting svcInfo), create a port-forward tunnel to that resource
 		if err == nil {
-			if tunnel, err = c.NewTunnel(namespace, SvcResource, name, "", 0, port); err != nil {
+			if tunnel, err = c.NewTunnel(svc.Namespace, SvcResource, svc.Name, "", 0, port); err != nil {
 				return "", tunnel, err
 			}
 		}
@@ -201,7 +189,7 @@ func (c *Cluster) checkForZarfConnectLabel(ctx context.Context, name string) (Tu
 
 	selector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
 		MatchLabels: map[string]string{
-			config.ZarfConnectLabelName: name,
+			ZarfConnectLabelName: name,
 		},
 	})
 	if err != nil {
@@ -234,7 +222,7 @@ func (c *Cluster) checkForZarfConnectLabel(ctx context.Context, name string) (Tu
 		}
 
 		// Add the url suffix too.
-		zt.urlSuffix = svc.Annotations[config.ZarfConnectAnnotationURL]
+		zt.urlSuffix = svc.Annotations[ZarfConnectAnnotationURL]
 
 		message.Debugf("tunnel connection match: %s/%s on port %d", svc.Namespace, svc.Name, zt.remotePort)
 	} else {
@@ -267,42 +255,42 @@ func (c *Cluster) findPodContainerPort(ctx context.Context, svc corev1.Service) 
 }
 
 // TODO: Refactor to use netip.AddrPort instead of a string for nodePortURL.
-func serviceInfoFromNodePortURL(services []corev1.Service, nodePortURL string) (string, string, int, error) {
+func serviceInfoFromNodePortURL(services []corev1.Service, nodePortURL string) (corev1.Service, int, error) {
 	// Attempt to parse as normal, if this fails add a scheme to the URL (docker registries don't use schemes)
 	parsedURL, err := url.Parse(nodePortURL)
 	if err != nil {
 		parsedURL, err = url.Parse("scheme://" + nodePortURL)
 		if err != nil {
-			return "", "", 0, err
+			return corev1.Service{}, 0, err
 		}
 	}
 
 	// Match hostname against localhost ip/hostnames
 	hostname := parsedURL.Hostname()
 	if hostname != helpers.IPV4Localhost && hostname != "localhost" {
-		return "", "", 0, fmt.Errorf("node port services should be on localhost")
+		return corev1.Service{}, 0, fmt.Errorf("node port services should be on localhost")
 	}
 
 	// Get the node port from the nodeportURL.
 	nodePort, err := strconv.Atoi(parsedURL.Port())
 	if err != nil {
-		return "", "", 0, err
+		return corev1.Service{}, 0, err
 	}
 	if nodePort < 30000 || nodePort > 32767 {
-		return "", "", 0, fmt.Errorf("node port services should use the port range 30000-32767")
+		return corev1.Service{}, 0, fmt.Errorf("node port services should use the port range 30000-32767")
 	}
 
 	for _, svc := range services {
 		if svc.Spec.Type == "NodePort" {
 			for _, port := range svc.Spec.Ports {
 				if int(port.NodePort) == nodePort {
-					return svc.Namespace, svc.Name, int(port.Port), nil
+					return svc, int(port.Port), nil
 				}
 			}
 		}
 	}
 
-	return "", "", 0, fmt.Errorf("no matching node port services found")
+	return corev1.Service{}, 0, fmt.Errorf("no matching node port services found")
 }
 
 // Global lock to synchronize port selections.

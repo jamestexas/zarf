@@ -8,9 +8,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
-	"reflect"
 	"slices"
 
 	"github.com/defenseunicorns/pkg/helpers/v2"
@@ -159,11 +159,15 @@ func (r *renderer) adoptAndUpdateNamespaces(ctx context.Context) error {
 			continue
 		}
 
-		// Try to get a valid existing secret
-		validRegistrySecret := c.GenerateRegistryPullCreds(name, config.ZarfImagePullSecretName, r.state.RegistryInfo)
+		// Create the secret
+		validRegistrySecret, err := c.GenerateRegistryPullCreds(ctx, name, config.ZarfImagePullSecretName, r.state.RegistryInfo)
+		if err != nil {
+			return err
+		}
 		// TODO: Refactor as error is not checked instead of checking for not found error.
 		currentRegistrySecret, _ := c.Clientset.CoreV1().Secrets(name).Get(ctx, config.ZarfImagePullSecretName, metav1.GetOptions{})
-		if currentRegistrySecret.Name != config.ZarfImagePullSecretName || !reflect.DeepEqual(currentRegistrySecret.Data, validRegistrySecret.Data) {
+		sameSecretData := maps.EqualFunc(currentRegistrySecret.Data, validRegistrySecret.Data, func(v1, v2 []byte) bool { return bytes.Equal(v1, v2) })
+		if currentRegistrySecret.Name != config.ZarfImagePullSecretName || !sameSecretData {
 			err := func() error {
 				_, err := c.Clientset.CoreV1().Secrets(validRegistrySecret.Namespace).Create(ctx, validRegistrySecret, metav1.CreateOptions{})
 				if err != nil && !kerrors.IsAlreadyExists(err) {
@@ -250,14 +254,14 @@ func (r *renderer) editHelmResources(ctx context.Context, resources []releaseuti
 			if annotations == nil {
 				annotations = map[string]string{}
 			}
-			if key, keyExists := labels[config.ZarfConnectLabelName]; keyExists {
+			if key, keyExists := labels[cluster.ZarfConnectLabelName]; keyExists {
 				// If there is a zarf-connect label
 				message.Debugf("Match helm service %s for zarf connection %s", rawData.GetName(), key)
 
 				// Add the connectString for processing later in the deployment
 				r.connectStrings[key] = types.ConnectString{
-					Description: annotations[config.ZarfConnectAnnotationDescription],
-					URL:         annotations[config.ZarfConnectAnnotationURL],
+					Description: annotations[cluster.ZarfConnectAnnotationDescription],
+					URL:         annotations[cluster.ZarfConnectAnnotationURL],
 				}
 			}
 		}

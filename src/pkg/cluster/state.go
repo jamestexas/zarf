@@ -19,7 +19,6 @@ import (
 	"github.com/defenseunicorns/pkg/helpers/v2"
 	"github.com/defenseunicorns/zarf/src/config"
 	"github.com/defenseunicorns/zarf/src/config/lang"
-	"github.com/defenseunicorns/zarf/src/pkg/k8s"
 	"github.com/defenseunicorns/zarf/src/pkg/message"
 	"github.com/defenseunicorns/zarf/src/pkg/pki"
 	"github.com/defenseunicorns/zarf/src/types"
@@ -27,20 +26,16 @@ import (
 
 // Zarf Cluster Constants.
 const (
-	ZarfManagedByLabel      = "app.kubernetes.io/managed-by"
-	ZarfNamespaceName       = "zarf"
-	ZarfStateSecretName     = "zarf-state"
-	ZarfStateDataKey        = "state"
-	ZarfPackageInfoLabel    = "package-deploy-info"
-	ZarfInitPackageInfoName = "zarf-package-init"
+	ZarfManagedByLabel   = "app.kubernetes.io/managed-by"
+	ZarfNamespaceName    = "zarf"
+	ZarfStateSecretName  = "zarf-state"
+	ZarfStateDataKey     = "state"
+	ZarfPackageInfoLabel = "package-deploy-info"
 )
 
 // InitZarfState initializes the Zarf state with the given temporary directory and init configs.
 func (c *Cluster) InitZarfState(ctx context.Context, initOptions types.ZarfInitOptions) error {
-	var (
-		distro string
-		err    error
-	)
+	var distro string
 
 	spinner := message.NewProgressSpinner("Gathering cluster state information")
 	defer spinner.Stop()
@@ -81,12 +76,13 @@ func (c *Cluster) InitZarfState(ctx context.Context, initOptions types.ZarfInitO
 
 		// Defaults
 		state.Distro = distro
-		if state.LoggingSecret, err = helpers.RandomString(types.ZarfGeneratedPasswordLen); err != nil {
-			return fmt.Errorf("%s: %w", lang.ErrUnableToGenerateRandomSecret, err)
-		}
 
 		// Setup zarf agent PKI
-		state.AgentTLS = pki.GeneratePKI(config.ZarfAgentHost)
+		agentTLS, err := pki.GeneratePKI(config.ZarfAgentHost)
+		if err != nil {
+			return err
+		}
+		state.AgentTLS = agentTLS
 
 		namespaceList, err := c.Clientset.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
 		if err != nil {
@@ -100,7 +96,7 @@ func (c *Cluster) InitZarfState(ctx context.Context, initOptions types.ZarfInitO
 				namespace.Labels = make(map[string]string)
 			}
 			// This label will tell the Zarf Agent to ignore this namespace.
-			namespace.Labels[k8s.AgentLabel] = "ignore"
+			namespace.Labels[AgentLabel] = "ignore"
 			namespaceCopy := namespace
 			_, err := c.Clientset.CoreV1().Namespaces().Update(ctx, &namespaceCopy, metav1.UpdateOptions{})
 			if err != nil {
@@ -148,7 +144,7 @@ func (c *Cluster) InitZarfState(ctx context.Context, initOptions types.ZarfInitO
 						return err
 					}
 					if kerrors.IsNotFound(err) {
-						c.Log("Service account %s/%s not found, retrying...", ns, name)
+						message.Debug("Service account %s/%s not found, retrying...", ns, name)
 						timer.Reset(1 * time.Second)
 						continue
 					}
@@ -214,19 +210,15 @@ func (c *Cluster) InitZarfState(ctx context.Context, initOptions types.ZarfInitO
 
 // LoadZarfState returns the current zarf/zarf-state secret data or an empty ZarfState.
 func (c *Cluster) LoadZarfState(ctx context.Context) (state *types.ZarfState, err error) {
-	// Set up the API connection
 	secret, err := c.Clientset.CoreV1().Secrets(ZarfNamespaceName).Get(ctx, ZarfStateSecretName, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("%w. %s", err, message.ColorWrap("Did you remember to zarf init?", color.Bold))
 	}
-
 	err = json.Unmarshal(secret.Data[ZarfStateDataKey], &state)
 	if err != nil {
 		return nil, err
 	}
-
 	c.debugPrintZarfState(state)
-
 	return state, nil
 }
 
@@ -248,9 +240,6 @@ func (c *Cluster) sanitizeZarfState(state *types.ZarfState) *types.ZarfState {
 	// Overwrite the ArtifactServer secret
 	state.ArtifactServer.PushToken = "**sanitized**"
 
-	// Overwrite the Logging secret
-	state.LoggingSecret = "**sanitized**"
-
 	return state
 }
 
@@ -261,7 +250,11 @@ func (c *Cluster) debugPrintZarfState(state *types.ZarfState) {
 	// this is a shallow copy, nested pointers WILL NOT be copied
 	oldState := *state
 	sanitized := c.sanitizeZarfState(&oldState)
-	message.Debugf("ZarfState - %s", message.JSONValue(sanitized))
+	b, err := json.MarshalIndent(sanitized, "", "  ")
+	if err != nil {
+		return
+	}
+	message.Debugf("ZarfState - %s", string(b))
 }
 
 // SaveZarfState takes a given state and persists it to the Zarf/zarf-state secret.
@@ -281,7 +274,7 @@ func (c *Cluster) SaveZarfState(ctx context.Context, state *types.ZarfState) err
 			Name:      ZarfStateSecretName,
 			Namespace: ZarfNamespaceName,
 			Labels: map[string]string{
-				k8s.ZarfManagedByLabel: "zarf",
+				ZarfManagedByLabel: "zarf",
 			},
 		},
 		Type: corev1.SecretTypeOpaque,
@@ -374,7 +367,11 @@ func MergeZarfState(oldState *types.ZarfState, initOptions types.ZarfInitOptions
 		}
 	}
 	if slices.Contains(services, message.AgentKey) {
-		newState.AgentTLS = pki.GeneratePKI(config.ZarfAgentHost)
+		agentTLS, err := pki.GeneratePKI(config.ZarfAgentHost)
+		if err != nil {
+			return nil, err
+		}
+		newState.AgentTLS = agentTLS
 	}
 
 	return &newState, nil

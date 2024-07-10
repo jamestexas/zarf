@@ -4,7 +4,6 @@
 package packager
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/defenseunicorns/zarf/src/pkg/packager/sources"
@@ -213,7 +212,8 @@ func TestGenerateValuesOverrides(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			p := NewOrDie(&types.PackagerConfig{DeployOpts: tt.deployOpts}, WithSource(&sources.TarballSource{}))
+			p, err := New(&types.PackagerConfig{DeployOpts: tt.deployOpts}, WithSource(&sources.TarballSource{}))
+			require.NoError(t, err)
 			for k, v := range tt.setVariables {
 				p.variableConfig.SetVariable(k, v, false, false, variables.RawVariableType)
 			}
@@ -222,9 +222,7 @@ func TestGenerateValuesOverrides(t *testing.T) {
 			if err != nil {
 				t.Errorf("%s: generateValuesOverrides() error = %v", tt.name, err)
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("%s: generateValuesOverrides() got = %v, want %v", tt.name, got, tt.want)
-			}
+			require.Equal(t, tt.want, got)
 		})
 	}
 }
