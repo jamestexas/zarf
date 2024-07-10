@@ -26,6 +26,7 @@ import (
 	"github.com/defenseunicorns/zarf/src/internal/packager/kustomize"
 	"github.com/defenseunicorns/zarf/src/internal/packager/sbom"
 	"github.com/defenseunicorns/zarf/src/pkg/layout"
+	"github.com/defenseunicorns/zarf/src/pkg/lint"
 	"github.com/defenseunicorns/zarf/src/pkg/message"
 	"github.com/defenseunicorns/zarf/src/pkg/packager/actions"
 	"github.com/defenseunicorns/zarf/src/pkg/packager/filters"
@@ -118,16 +119,12 @@ func (pc *PackageCreator) LoadPackageDefinition(ctx context.Context, src *layout
 		}
 	}
 
-	if err := pc.Validate(ctx, pkg); err != nil {
+	if findings, err := Validate(pkg); err != nil {
+		lint.PrintFindings(findings, lint.SevErr, pc.createOpts.BaseDir, pkg.Metadata.Name)
 		return types.ZarfPackage{}, nil, err
 	}
 
 	return pkg, warnings, nil
-}
-
-// Validate ensures that the package is valid
-func (pc *PackageCreator) Validate(_ context.Context, pkg types.ZarfPackage) error {
-	return validate(pc.createOpts, pkg)
 }
 
 // Assemble assembles all of the package assets into Zarf's tmp directory layout.

@@ -19,6 +19,7 @@ import (
 	"github.com/defenseunicorns/zarf/src/internal/packager/helm"
 	"github.com/defenseunicorns/zarf/src/internal/packager/kustomize"
 	"github.com/defenseunicorns/zarf/src/pkg/layout"
+	"github.com/defenseunicorns/zarf/src/pkg/lint"
 	"github.com/defenseunicorns/zarf/src/pkg/message"
 	"github.com/defenseunicorns/zarf/src/pkg/utils"
 	"github.com/defenseunicorns/zarf/src/pkg/zoci"
@@ -70,16 +71,12 @@ func (sc *SkeletonCreator) LoadPackageDefinition(ctx context.Context, src *layou
 		message.Warn(warning)
 	}
 
-	if err := sc.Validate(ctx, pkg); err != nil {
+	if findings, err := Validate(pkg); err != nil {
+		lint.PrintFindings(findings, lint.SevErr, sc.createOpts.BaseDir, pkg.Metadata.Name)
 		return types.ZarfPackage{}, nil, err
 	}
 
 	return pkg, warnings, nil
-}
-
-// Validate ensures that the package is valid
-func (sc *SkeletonCreator) Validate(_ context.Context, pkg types.ZarfPackage) error {
-	return validate(sc.createOpts, pkg)
 }
 
 // Assemble updates all components of the loaded Zarf package with necessary modifications for package assembly.

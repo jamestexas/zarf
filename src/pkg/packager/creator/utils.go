@@ -16,22 +16,23 @@ import (
 	"github.com/defenseunicorns/zarf/src/types"
 )
 
-func validate(createOpts types.ZarfCreateOptions, pkg types.ZarfPackage) error {
+// Validate errors if a package violates the schema or any runtime validations
+// This must be run from the directory of the Zarf.yaml validations are occurring on
+func Validate(pkg types.ZarfPackage) ([]lint.PackageFinding, error) {
 	if err := pkg.Validate(); err != nil {
-		return fmt.Errorf("package validation failed: %w", err)
+		return nil, fmt.Errorf("package validation failed: %w", err)
 	}
 
 	findings, err := lint.ValidateSchema()
 	if err != nil {
-		return fmt.Errorf("unable to check schema: %w", err)
+		return nil, fmt.Errorf("unable to check schema: %w", err)
 	}
 
-	lint.PrintFindings(findings, lint.SevErr, createOpts.BaseDir, pkg.Metadata.Name)
 	if lint.HasSeverity(findings, lint.SevErr) {
-		return fmt.Errorf("found errors in package")
+		return findings, fmt.Errorf("found errors in package")
 	}
 
-	return nil
+	return nil, nil
 }
 
 // recordPackageMetadata records various package metadata during package create.

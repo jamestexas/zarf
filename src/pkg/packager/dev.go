@@ -13,6 +13,7 @@ import (
 	"github.com/defenseunicorns/pkg/helpers/v2"
 	"github.com/defenseunicorns/zarf/src/config"
 	"github.com/defenseunicorns/zarf/src/pkg/layout"
+	"github.com/defenseunicorns/zarf/src/pkg/lint"
 	"github.com/defenseunicorns/zarf/src/pkg/message"
 	"github.com/defenseunicorns/zarf/src/pkg/packager/creator"
 	"github.com/defenseunicorns/zarf/src/pkg/packager/filters"
@@ -53,7 +54,8 @@ func (p *Packager) DevDeploy(ctx context.Context) error {
 		return err
 	}
 
-	if err := pc.Validate(ctx, p.cfg.Pkg); err != nil {
+	if findings, err := creator.Validate(p.cfg.Pkg); err != nil {
+		lint.PrintFindings(findings, lint.SevErr, p.cfg.CreateOpts.BaseDir, p.cfg.Pkg.Metadata.Name)
 		return fmt.Errorf("package validation failed: %w", err)
 	}
 
