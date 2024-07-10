@@ -41,20 +41,37 @@ func CheckComponentValues(c types.ZarfComponent, i int) []PackageFinding {
 // CheckComponentKeys runs lint rules validating keys on components, can be run before templating
 func CheckComponentKeys(c types.ZarfComponent, i int) []PackageFinding {
 	var findings []PackageFinding
-	findings = append(findings, checkForGroup(c, i)...)
+	finding, hasGroup := checkForGroup(c, i)
+	if hasGroup {
+		findings = append(findings, finding)
+	}
+	finding, hasCosign := checkForCosignKeyPath(c, i)
+	if hasCosign {
+		findings = append(findings, finding)
+	}
 	return findings
 }
 
-func checkForGroup(c types.ZarfComponent, i int) []PackageFinding {
-	var pkgErrs []PackageFinding
+func checkForGroup(c types.ZarfComponent, i int) (PackageFinding, bool) {
 	if c.DeprecatedGroup != "" {
-		pkgErrs = append(pkgErrs, PackageFinding{
+		return PackageFinding{
 			YqPath:      fmt.Sprintf(".components.[%d].group", i),
-			Description: fmt.Sprintf("Component %s is using group which has been deprecated and will be removed in v1.0.0.  Please migrate to another solution", c.Name),
+			Description: fmt.Sprintf("Component %s is using group which has been deprecated and will be removed in v1.0.0", c.Name),
 			Severity:    SevWarn,
-		})
+		}, true
 	}
-	return pkgErrs
+	return PackageFinding{}, false
+}
+
+func checkForCosignKeyPath(c types.ZarfComponent, i int) (PackageFinding, bool) {
+	if c.DeprecatedCosignKeyPath != "" {
+		return PackageFinding{
+			YqPath:      fmt.Sprintf(".components.[%d].cosignKeyPath", i),
+			Description: fmt.Sprintf("Component %s is using cosignKeyPath which has been deprecated and will be removed in v1.0.0", c.Name),
+			Severity:    SevWarn,
+		}, true
+	}
+	return PackageFinding{}, false
 }
 
 func checkForUnpinnedRepos(c types.ZarfComponent, i int) []PackageFinding {

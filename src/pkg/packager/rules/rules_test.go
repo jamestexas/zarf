@@ -135,3 +135,30 @@ func TestValidateComponent(t *testing.T) {
 		}
 	})
 }
+
+func TestCheckComponentKeys(t *testing.T) {
+	t.Parallel()
+
+	component := types.ZarfComponent{
+		Name:                    "test-component",
+		DeprecatedGroup:         "deprecated-group",
+		DeprecatedCosignKeyPath: "deprecated-cosignKeyPath",
+	}
+
+	findings := CheckComponentKeys(component, 0)
+
+	expected := []PackageFinding{
+		{
+			YqPath:      ".components.[0].group",
+			Description: "Component test-component is using group which has been deprecated and will be removed in v1.0.0",
+			Severity:    SevWarn,
+		},
+		{
+			YqPath:      ".components.[0].cosignKeyPath",
+			Description: "Component test-component is using cosignKeyPath which has been deprecated and will be removed in v1.0.0",
+			Severity:    SevWarn,
+		},
+	}
+
+	require.Equal(t, expected, findings)
+}
