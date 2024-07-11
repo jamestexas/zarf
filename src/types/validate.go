@@ -265,10 +265,6 @@ func (chart ZarfChart) Validate() error {
 		err = errors.Join(err, fmt.Errorf(lang.PkgValidateErrChartNamespaceMissing, chart.Name))
 	}
 
-	if chart.Version == "" {
-		err = errors.Join(err, fmt.Errorf(lang.PkgValidateErrChartVersion, chart.Name))
-	}
-
 	// Must have a url or localPath (and not both)
 	if chart.URL != "" && chart.LocalPath != "" {
 		err = errors.Join(err, fmt.Errorf(lang.PkgValidateErrChartURLOrPath, chart.Name))
@@ -276,6 +272,10 @@ func (chart ZarfChart) Validate() error {
 
 	if chart.URL == "" && chart.LocalPath == "" {
 		err = errors.Join(err, fmt.Errorf(lang.PkgValidateErrChartURLOrPath, chart.Name))
+	}
+
+	if chart.Version == "" {
+		err = errors.Join(err, fmt.Errorf(lang.PkgValidateErrChartVersion, chart.Name))
 	}
 
 	return err
