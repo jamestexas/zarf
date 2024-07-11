@@ -28,7 +28,7 @@ func Validate(pkg types.ZarfPackage) ([]lint.PackageFinding, error) {
 		return nil, fmt.Errorf("unable to check schema: %w", err)
 	}
 
-	if lint.HasSeverity(findings, lint.SevErr) {
+	if lint.HasSevOrHigher(findings, lint.SevErr) {
 		return findings, fmt.Errorf("found errors in package")
 	}
 

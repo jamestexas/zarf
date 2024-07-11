@@ -29,8 +29,7 @@ type PackageFinding struct {
 	Severity            Severity
 }
 
-// Severity is the type of package error
-// Either Err or Warning
+// Severity is the type of finding
 type Severity int
 
 // different severities of package errors
@@ -55,13 +54,20 @@ func colorWrapSev(s Severity) string {
 	return "unknown"
 }
 
+func filterLowerSeverity(findings []PackageFinding, severity Severity) []PackageFinding {
+	findings = helpers.RemoveMatches(findings, func(finding PackageFinding) bool {
+		return finding.Severity > severity
+	})
+	return findings
+}
+
 // PrintFindings prints the findings of the given severity in a table
 func PrintFindings(findings []PackageFinding, severity Severity, baseDir string, packageName string) {
-	// TODO add filter sev function
-	mapOfFindingsByPath := GroupFindingsByPath(findings, severity, packageName)
-	if len(mapOfFindingsByPath) == 0 {
+	findings = filterLowerSeverity(findings, severity)
+	if len(findings) == 0 {
 		return
 	}
+	mapOfFindingsByPath := GroupFindingsByPath(findings, packageName)
 
 	header := []string{"Type", "Path", "Message"}
 
@@ -86,10 +92,7 @@ func PrintFindings(findings []PackageFinding, severity Severity, baseDir string,
 }
 
 // GroupFindingsByPath groups findings by their package path
-func GroupFindingsByPath(findings []PackageFinding, severity Severity, packageName string) map[string][]PackageFinding {
-	findings = helpers.RemoveMatches(findings, func(finding PackageFinding) bool {
-		return finding.Severity > severity
-	})
+func GroupFindingsByPath(findings []PackageFinding, packageName string) map[string][]PackageFinding {
 	for i := range findings {
 		if findings[i].PackageNameOverride == "" {
 			findings[i].PackageNameOverride = packageName
@@ -106,12 +109,7 @@ func GroupFindingsByPath(findings []PackageFinding, severity Severity, packageNa
 	return mapOfFindingsByPath
 }
 
-// HasSeverity returns true if the findings contain a severity equal to or greater than the given severity
-func HasSeverity(findings []PackageFinding, severity Severity) bool {
-	for _, finding := range findings {
-		if finding.Severity <= severity {
-			return true
-		}
-	}
-	return false
+// HasSevOrHigher returns true if the findings contain a severity equal to or greater than the given severity
+func HasSevOrHigher(findings []PackageFinding, severity Severity) bool {
+	return len(filterLowerSeverity(findings, severity)) > 0
 }

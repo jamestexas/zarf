@@ -50,7 +50,7 @@ func Validate(ctx context.Context, createOpts types.ZarfCreateOptions) error {
 
 	PrintFindings(findings, SevWarn, createOpts.BaseDir, pkg.Metadata.Name)
 
-	if HasSeverity(findings, SevErr) {
+	if HasSevOrHigher(findings, SevErr) {
 		return errors.New("errors during lint")
 	}
 

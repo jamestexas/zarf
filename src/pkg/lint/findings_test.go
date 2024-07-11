@@ -25,7 +25,6 @@ func TestGroupFindingsByPath(t *testing.T) {
 				{Severity: SevWarn, PackageNameOverride: "import", PackagePathOverride: "path"},
 				{Severity: SevWarn, PackageNameOverride: "import", PackagePathOverride: "path"},
 			},
-			severity:    SevWarn,
 			packageName: "testPackage",
 			want: map[string][]PackageFinding{
 				"path": {
@@ -40,23 +39,10 @@ func TestGroupFindingsByPath(t *testing.T) {
 				{Severity: SevWarn, PackageNameOverride: "import", PackagePathOverride: "path"},
 				{Severity: SevErr, PackageNameOverride: "", PackagePathOverride: ""},
 			},
-			severity:    SevWarn,
 			packageName: "testPackage",
 			want: map[string][]PackageFinding{
 				"path": {{Severity: SevWarn, PackageNameOverride: "import", PackagePathOverride: "path"}},
 				".":    {{Severity: SevErr, PackageNameOverride: "testPackage", PackagePathOverride: "."}},
-			},
-		},
-		{
-			name: "Multiple findings, mixed severity",
-			findings: []PackageFinding{
-				{Severity: SevWarn, PackageNameOverride: "", PackagePathOverride: ""},
-				{Severity: SevErr, PackageNameOverride: "", PackagePathOverride: ""},
-			},
-			severity:    SevErr,
-			packageName: "testPackage",
-			want: map[string][]PackageFinding{
-				".": {{Severity: SevErr, PackageNameOverride: "testPackage", PackagePathOverride: "."}},
 			},
 		},
 	}
@@ -64,7 +50,7 @@ func TestGroupFindingsByPath(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			require.Equal(t, tt.want, GroupFindingsByPath(tt.findings, tt.severity, tt.packageName))
+			require.Equal(t, tt.want, GroupFindingsByPath(tt.findings, tt.packageName))
 		})
 	}
 }
@@ -115,7 +101,7 @@ func TestHasSeverity(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			require.Equal(t, tt.expected, HasSeverity(tt.findings, tt.severity))
+			require.Equal(t, tt.expected, HasSevOrHigher(tt.findings, tt.severity))
 		})
 	}
 }
