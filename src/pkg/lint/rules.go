@@ -22,7 +22,18 @@ func isPinnedImage(image string) (bool, error) {
 		}
 		return false, err
 	}
+	if isCosignSignature(transformedImage.Tag) || isCosignAttestation(transformedImage.Tag) {
+		return true, nil
+	}
 	return (transformedImage.Digest != ""), err
+}
+
+func isCosignSignature(image string) bool {
+	return strings.HasSuffix(image, ".sig")
+}
+
+func isCosignAttestation(image string) bool {
+	return strings.HasSuffix(image, ".att")
 }
 
 func isPinnedRepo(repo string) bool {
