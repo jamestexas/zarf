@@ -75,7 +75,7 @@ func lintComponents(ctx context.Context, pkg types.ZarfPackage, createOpts types
 		node := chain.Head()
 		for node != nil {
 			component := node.ZarfComponent
-			compFindings, err := fillComponentTemplate(&component, &createOpts)
+			compFindings, err := fillComponentTemplate(&component, createOpts)
 			if err != nil {
 				return nil, err
 			}
@@ -91,19 +91,17 @@ func lintComponents(ctx context.Context, pkg types.ZarfPackage, createOpts types
 	return findings, nil
 }
 
-func fillComponentTemplate(c *types.ZarfComponent, createOpts *types.ZarfCreateOptions) ([]PackageFinding, error) {
+func fillComponentTemplate(c *types.ZarfComponent, createOpts types.ZarfCreateOptions) ([]PackageFinding, error) {
 	var findings []PackageFinding
-	var templateMap map[string]string
+	templateMap := map[string]string{}
 
-	setVarsAndWarn := func(templatePrefix string, deprecated bool) {
+	setVarsAndWarn := func(templatePrefix string, deprecated bool) error {
 		yamlTemplates, err := utils.FindYamlTemplates(c, templatePrefix, "###")
 		if err != nil {
-			findings = append(findings, PackageFinding{
-				Description: err.Error(),
-				Severity:    SevWarn,
-			})
+			return err
 		}
 
+		var unSetTemplates bool
 		for key := range yamlTemplates {
 			if deprecated {
 				findings = append(findings, PackageFinding{
@@ -111,21 +109,30 @@ func fillComponentTemplate(c *types.ZarfComponent, createOpts *types.ZarfCreateO
 					Severity:    SevWarn,
 				})
 			}
-			_, present := createOpts.SetVariables[key]
-			if !present {
-				findings = append(findings, PackageFinding{
-					Description: lang.UnsetVarLintWarning,
-					Severity:    SevWarn,
-				})
+			if _, present := createOpts.SetVariables[key]; !present {
+				unSetTemplates = true
 			}
 		}
-
+		if unSetTemplates {
+			findings = append(findings, PackageFinding{
+				Description: lang.UnsetVarLintWarning,
+				Severity:    SevWarn,
+			})
+		}
+		for key, value := range createOpts.SetVariables {
+			templateMap[fmt.Sprintf("%s%s###", templatePrefix, key)] = value
+		}
+		return nil
 	}
 
-	setVarsAndWarn(types.ZarfPackageTemplatePrefix, false)
+	if err := setVarsAndWarn(types.ZarfPackageTemplatePrefix, false); err != nil {
+		return nil, err
+	}
 
 	// [DEPRECATION] Set the Package Variable syntax as well for backward compatibility
-	setVarsAndWarn(types.ZarfPackageVariablePrefix, true)
+	if err := setVarsAndWarn(types.ZarfPackageVariablePrefix, true); err != nil {
+		return nil, err
+	}
 
 	if err := utils.ReloadYamlTemplate(c, templateMap); err != nil {
 		return nil, err

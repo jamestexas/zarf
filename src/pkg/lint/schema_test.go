@@ -17,7 +17,7 @@ import (
 
 func TestZarfSchema(t *testing.T) {
 	t.Parallel()
-	zarfSchema, err := os.ReadFile("../../../../zarf.schema.json")
+	zarfSchema, err := os.ReadFile("../../../zarf.schema.json")
 	require.NoError(t, err)
 
 	tests := []struct {

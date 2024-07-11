@@ -6,8 +6,10 @@ package lint
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
+	"github.com/defenseunicorns/zarf/src/config/lang"
 	"github.com/defenseunicorns/zarf/src/types"
 	"github.com/stretchr/testify/require"
 )
@@ -28,4 +30,36 @@ func TestLintComponents(t *testing.T) {
 		_, err := lintComponents(context.Background(), zarfPackage, createOpts)
 		require.Error(t, err)
 	})
+}
+func TestFillComponentTemplate(t *testing.T) {
+	createOpts := types.ZarfCreateOptions{
+		SetVariables: map[string]string{
+			"KEY1": "value1",
+			"KEY2": "value2",
+		},
+	}
+
+	component := types.ZarfComponent{
+		Images: []string{
+			fmt.Sprintf("%s%s###", types.ZarfPackageTemplatePrefix, "KEY1"),
+			fmt.Sprintf("%s%s###", types.ZarfPackageVariablePrefix, "KEY2"),
+			fmt.Sprintf("%s%s###", types.ZarfPackageTemplatePrefix, "KEY3"),
+		},
+	}
+
+	findings, err := fillComponentTemplate(&component, createOpts)
+	require.NoError(t, err)
+	expected := []PackageFinding{
+		{
+			Severity:    SevWarn,
+			Description: "There are templates that are not set and won't be evaluated during lint",
+		},
+		{
+			Severity:    SevWarn,
+			Description: fmt.Sprintf(lang.PkgValidateTemplateDeprecation, "KEY2", "KEY2", "KEY2"),
+		},
+	}
+	require.ElementsMatch(t, expected, findings)
+
+	// Add assertions for the expected behavior of fillComponentTemplate
 }

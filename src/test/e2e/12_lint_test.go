@@ -35,7 +35,8 @@ func TestLint(t *testing.T) {
 		require.Error(t, err, "Require an exit code since there was warnings / errors")
 		strippedStderr := e2e.StripMessageFormatting(stderr)
 
-		key := "BUSYBOX_IMAGE"
+		key := "WHATEVER_IMAGE"
+		require.Contains(t, strippedStderr, lang.UnsetVarLintWarning)
 		require.Contains(t, strippedStderr, fmt.Sprintf(lang.PkgValidateTemplateDeprecation, key, key, key))
 		require.Contains(t, strippedStderr, ".components.[2].repos.[0] | Unpinned repository")
 		require.Contains(t, strippedStderr, ".metadata | Additional property description1 is not allowed")
