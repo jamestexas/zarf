@@ -49,7 +49,7 @@ func TestFillComponentTemplate(t *testing.T) {
 
 	findings, err := fillComponentTemplate(&component, createOpts)
 	require.NoError(t, err)
-	expected := []PackageFinding{
+	expectedFindings := []PackageFinding{
 		{
 			Severity:    SevWarn,
 			Description: "There are templates that are not set and won't be evaluated during lint",
@@ -59,7 +59,13 @@ func TestFillComponentTemplate(t *testing.T) {
 			Description: fmt.Sprintf(lang.PkgValidateTemplateDeprecation, "KEY2", "KEY2", "KEY2"),
 		},
 	}
-	require.ElementsMatch(t, expected, findings)
-
-	// Add assertions for the expected behavior of fillComponentTemplate
+	expectedComponent := types.ZarfComponent{
+		Images: []string{
+			"value1",
+			"value2",
+			fmt.Sprintf("%s%s###", types.ZarfPackageTemplatePrefix, "KEY3"),
+		},
+	}
+	require.ElementsMatch(t, expectedFindings, findings)
+	require.Equal(t, expectedComponent, component)
 }
