@@ -15,7 +15,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/defenseunicorns/zarf/src/config"
 	"github.com/defenseunicorns/zarf/src/pkg/message"
 	"github.com/fatih/color"
 	goyaml "github.com/goccy/go-yaml"
@@ -93,7 +92,7 @@ func ColorPrintYAML(data any, hints map[string]string, spaceRootLists bool) {
 		outputYAML = strings.Replace(outputYAML, key, value, 1)
 	}
 
-	if config.NoColor {
+	if !message.ColorEnabled() {
 		// If no color is specified strip any color codes from the output - https://regex101.com/r/YFyIwC/2
 		ansiRegex := regexp.MustCompile(`\x1b\[(.*?)m`)
 		outputYAML = ansiRegex.ReplaceAllString(outputYAML, "")
