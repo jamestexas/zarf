@@ -83,7 +83,7 @@ func TestValidateComponent(t *testing.T) {
 		}
 		component := types.ZarfComponent{Files: zarfFiles}
 		findings := checkForUnpinnedFiles(component, 0)
-		expectedErr := []PackageFinding{
+		expected := []PackageFinding{
 			{
 				Item:        fileURL,
 				Description: "No shasum for remote file",
@@ -91,7 +91,7 @@ func TestValidateComponent(t *testing.T) {
 				YqPath:      ".components.[0].files.[0]",
 			},
 		}
-		require.Equal(t, expectedErr, findings)
+		require.Equal(t, expected, findings)
 		require.Len(t, findings, 1)
 	})
 
