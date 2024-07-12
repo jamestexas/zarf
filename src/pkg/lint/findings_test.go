@@ -47,7 +47,6 @@ func TestGroupFindingsByPath(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			require.Equal(t, tt.want, GroupFindingsByPath(tt.findings, tt.packageName))
@@ -98,7 +97,6 @@ func TestHasSeverity(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			require.Equal(t, tt.expected, HasSevOrHigher(tt.findings, tt.severity))
