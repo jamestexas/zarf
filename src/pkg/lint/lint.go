@@ -25,7 +25,6 @@ func Validate(ctx context.Context, createOpts types.ZarfCreateOptions) error {
 	if err := os.Chdir(createOpts.BaseDir); err != nil {
 		return fmt.Errorf("unable to access directory %q: %w", createOpts.BaseDir, err)
 	}
-
 	var pkg types.ZarfPackage
 	if err := utils.ReadYaml(layout.ZarfYAML, &pkg); err != nil {
 		return err
@@ -36,7 +35,6 @@ func Validate(ctx context.Context, createOpts types.ZarfCreateOptions) error {
 		return err
 	}
 	findings = append(findings, compFindings...)
-
 	schemaFindings, err := ValidateSchema()
 	if err != nil {
 		return err
@@ -47,13 +45,10 @@ func Validate(ctx context.Context, createOpts types.ZarfCreateOptions) error {
 		message.Successf("0 findings for %q", pkg.Metadata.Name)
 		return nil
 	}
-
 	PrintFindings(findings, SevWarn, createOpts.BaseDir, pkg.Metadata.Name)
-
 	if HasSevOrHigher(findings, SevErr) {
 		return errors.New("errors during lint")
 	}
-
 	return nil
 }
 
