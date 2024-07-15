@@ -31,7 +31,7 @@ Zarf will begin having proper schema versions. A top level key, `apiVersion`, wi
 
 The existing go types which comprise the Zarf schema will be moved to types/alpha and will never change. An updated copy of these types without the deprecated fields will be created in a package types/v1 and any future schema changes will affect these objects. Internally, Zarf will introduce translation functions which will take the alpha schema and return the v1 schema. From that point on, all function signatures that have a struct that is included in the Zarf schema will change from `types.structName` to `v1.structName`.
 
-All deprecated features will cause an error on create. Deprecated features with a direct migration path will still be deployed if the package was created v1, as migrations will add the non deprecated fields. If a feature does not have a direct automatic migration path (cosignKeyPath & groups) the package will fail on deploy. This will happen until the alpha schema is entirely removed from Zarf, which will happen one year after v1 is released.
+All deprecated features will cause an error on create. Deprecated features with a direct migration path will still be deployed if the package was created with schema v1, as migrations will add the non deprecated fields. If a feature does not have a direct automatic migration path (cosignKeyPath & groups) the package will fail on deploy. This will happen until the alpha schema is entirely removed from Zarf, which will happen one year after v1 is released.
 
 At create time Zarf will package both a `zarf.yaml` and a `zarfv1.yaml`. If a `zarfv1.yaml` exists Zarf will use that. If a `zarfv1.yaml` does not exist, then Zarf will know that the package was created prior to v1 and use the regular `zarf.yaml`. If the package is deployed with v0 it will read the `zarf.yaml` as normal even if the package has a `zarfv1.yaml`. This will make it simpler to drop deprecated items with migration paths from the v1 schema while remaining backwards compatible as those deprecated items will exist in the `zarf.yaml`
 
@@ -43,7 +43,7 @@ There are several other keys Zarf will deprecate which will have automated migra
 - `noWait` -> `wait` which will default to true. This change will happen on both `.components.manifests` and `components.charts`
 - `yolo` -> `airgap` which will default to true
 - `.components.actions.[default/onAny].maxRetries` -> `.components.actions.[default/onAny].retries`
-- charts will change to avoid [current confusion with keys](https://github.com/defenseunicorns/zarf/issues/2245). Exactly one of the following field will exist for each `components.charts`.
+- charts will change to avoid [current confusion with keys](https://github.com/defenseunicorns/zarf/issues/2245). Exactly one of the following fields will exist for each `components.charts`.
 ```yaml
   helm:
     url: https://stefanprodan.github.io/podinfo
@@ -94,7 +94,7 @@ The following are [behavior driven development](https://en.wikipedia.org/wiki/Be
 - *then* Zarf v0 will deploy the package without issues. If there are fields unrecognized by the v0 schema, then the user will be warned they are deploying a package that has features that do not exist in the current version of Zarf.
 
 ## Consequences
-- As long as the only deprecated features in a package have migration path, and the package was built after the feature was deprecated so migrations were run, Zarf will be successful in both creating a package with v1 and deploying with v0, and creating a package with v0 and deploying with v1.
+- As long as the only deprecated features in a package have a migration path, and the package was built after the feature was deprecated so migrations were run, Zarf will be successful in both creating a package with v1 and deploying with v0, and creating a package with v0 and deploying with v1.
 - Users of deprecated `group`, `cosignKeyPath`, and `action.Wait` keys outside of `onDeploy` might be frustrated if their packages, created v0, error out on Zarf v1, however this is preferable to unexpected behavior occurring in the cluster.
 - Users may be frustrated that they have to run `zarf dev update-schema` to edit their `zarf.yaml` to remove the deprecated fields and add `apiVersion`.
 - The Zarf codebase will contain two Zarf package objects, v1 and v0. Many fields on these objects will be unchanged across v0 and v1, however, v0 will not include new fields, and v1 will exclude deprecated fields. This approach is similar to the strategies used by [Kubernetes](https://github.com/kubernetes/api/tree/master/storage) and [flux](https://github.com/fluxcd/source-controller/tree/main/api)
