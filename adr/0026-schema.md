@@ -91,7 +91,7 @@ The following are [behavior driven development](https://en.wikipedia.org/wiki/Be
 - *Given*: A package is created with Zarf v1
 - *and* that package uses keys that don't exist in v0
 - *when* the package is deployed with Zarf v0
-- *then* Zarf v0 will deploy the package without issues. If there are fields unrecognized by the v0 schema, then the user will be warned they are deploying a package that has features that do not exist in the current version of Zarf.
+- *then* Zarf v0 will deploy the package without issues. Additionally if the users is on a v0 version of Zarf after issue [2728](https://github.com/defenseunicorns/zarf/issues/2728) has been implemented, if there are fields unrecognized by the v0 schema, then the user will be warned they are deploying a package that has features that do not exist in the current version of Zarf.
 
 ## Consequences
 - As long as the only deprecated features in a package have a migration path, and the package was built after the feature was deprecated so migrations were run, Zarf will be successful in both creating a package with v1 and deploying with v0, and creating a package with v0 and deploying with v1.
